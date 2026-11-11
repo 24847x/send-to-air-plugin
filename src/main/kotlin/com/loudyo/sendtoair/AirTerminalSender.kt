@@ -35,8 +35,13 @@ internal object AirTerminalSender {
     }
 
     private fun findTerminalView(root: JComponent, preferredFocused: JComponent?): TerminalView? {
-        val candidates = listOfNotNull(preferredFocused) +
-            UIUtil.findComponentsOfType(root, EditorComponentImpl::class.java)
+        // The terminal host differs between IDE/Air versions, so try the preferred component, the
+        // editor components, and finally every component under the session root.
+        val candidates = sequence {
+            listOfNotNull(preferredFocused, root).forEach { yield(it) }
+            UIUtil.findComponentsOfType(root, EditorComponentImpl::class.java).forEach { yield(it) }
+            UIUtil.findComponentsOfType(root, JComponent::class.java).forEach { yield(it) }
+        }
         return candidates.firstNotNullOfOrNull { component ->
             DataManager.getInstance().getDataContext(component).getData(TerminalView.DATA_KEY)
         }

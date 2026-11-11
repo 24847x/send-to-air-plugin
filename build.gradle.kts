@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.loudyo.sendtoair"
-version = "1.0.0"
+version = "1.0.1"
 
 val pluginId = "com.loudyo.sendtoair"
 val pluginName = "Send to Air"
@@ -49,6 +49,10 @@ intellijPlatform {
         name = pluginName
         version = pluginVersion
         changeNotes = """
+            <p>1.0.1</p>
+            <ul>
+              <li>Fix: terminal-based sessions (Claude Code) docked in the Air "Agent Sessions" tool window in IDEA 2026.3 are now found.</li>
+            </ul>
             <p>1.0.0</p>
             <ul>
               <li>Initial release.</li>

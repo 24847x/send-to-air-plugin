@@ -157,18 +157,24 @@ class SendToAirAction : AnAction() {
         // Prefer sessions visible in an editor split, then any other open session tab.
         val editors = (fileEditorManager.selectedEditors.asSequence() + fileEditorManager.allEditors.asSequence()).distinct()
         for (fileEditor in editors) {
-            if (fileEditor is TextEditor) continue // regular code editor, not a session
+            // Regular code editors (real files) are not sessions; Air session tabs are virtual files.
+            if (fileEditor is TextEditor && fileEditor.file?.isInLocalFileSystem != false) continue
             val send = findSender(fileEditor.component, fileEditor.preferredFocusedComponent) ?: continue
             focusEditor(fileEditorManager, fileEditor)
             send(refs)
             return true
         }
 
-        val chatToolWindow = ToolWindowManager.getInstance(project).getToolWindow(CHAT_TOOL_WINDOW_ID)
-        val chatContent = chatToolWindow?.contentManager?.selectedContent
-        val send = chatContent?.let { findSender(it.component, it.preferredFocusableComponent) }
-        if (chatToolWindow != null && send != null) {
-            chatToolWindow.activate({ send(refs) }, true)
+        // Session may be docked in a tool window: "air.chat" first, then any other visible Air tool window
+        // (e.g. "air.threads" hosts terminal-based sessions). The regular Terminal tool window is never used.
+        val toolWindowManager = ToolWindowManager.getInstance(project)
+        val ids = listOf(CHAT_TOOL_WINDOW_ID) + toolWindowManager.toolWindowIds.filter { it.startsWith("air.") && it != CHAT_TOOL_WINDOW_ID }
+        for (id in ids) {
+            val toolWindow = toolWindowManager.getToolWindow(id) ?: continue
+            if (id != CHAT_TOOL_WINDOW_ID && !toolWindow.isVisible) continue
+            val content = toolWindow.contentManager.selectedContent ?: continue
+            val send = findSender(content.component, content.preferredFocusableComponent) ?: continue
+            toolWindow.activate({ send(refs) }, true)
             return true
         }
         return false
