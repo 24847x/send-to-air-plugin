@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.loudyo.sendtoair"
-version = "1.0.1"
+version = "1.0.2"
 
 val pluginId = "com.loudyo.sendtoair"
 val pluginName = "Send to Air"
@@ -49,6 +49,11 @@ intellijPlatform {
         name = pluginName
         version = pluginVersion
         changeNotes = """
+            <p>1.0.2</p>
+            <ul>
+              <li>Fix: the reference now goes to the most recent open Air session instead of starting a new one when that session's tab isn't visible (e.g. a Claude Code session behind a code editor tab, or restored after an IDE restart).</li>
+              <li>Replaced deprecated and internal API usages reported by the Plugin Verifier.</li>
+            </ul>
             <p>1.0.1</p>
             <ul>
               <li>Fix: terminal-based sessions (Claude Code) docked in the Air "Agent Sessions" tool window in IDEA 2026.3 are now found.</li>

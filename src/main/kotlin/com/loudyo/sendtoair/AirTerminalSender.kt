@@ -20,7 +20,8 @@ internal object AirTerminalSender {
 
     /** Returns a function that pastes text into the terminal found under [root] and focuses it, or null. */
     fun findSender(root: JComponent, preferredFocused: JComponent?): ((String) -> Unit)? {
-        if (PluginManagerCore.isDisabled(terminalPluginId) || PluginManagerCore.getPlugin(terminalPluginId) == null) return null
+        // isLoaded covers both "not installed" and "disabled" (getPlugin is internal API).
+        if (!PluginManagerCore.isLoaded(terminalPluginId)) return null
         val view = try {
             findTerminalView(root, preferredFocused)
         } catch (_: LinkageError) {

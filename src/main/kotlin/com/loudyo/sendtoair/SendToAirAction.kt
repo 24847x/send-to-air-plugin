@@ -12,7 +12,9 @@ import com.intellij.openapi.actionSystem.PlatformCoreDataKeys
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.fileEditor.TextEditor
+import com.intellij.openapi.fileEditor.impl.EditorHistoryManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
 import com.intellij.openapi.vfs.VfsUtilCore
@@ -39,6 +41,14 @@ class SendToAirAction : AnAction() {
         }
 
         if (insertIntoOpenSession(project, refs)) return
+
+        // A session tab is open but its input isn't attached yet: Air attaches a terminal-based session's
+        // terminal only while its tab is showing, so a tab behind a code editor (or restored after a restart)
+        // has none. Bring the most recent session tab forward and wait for its input instead of starting a new one.
+        if (revealRecentSession(project)) {
+            retryInsert(project, refs)
+            return
+        }
 
         // No Air session is open: start one with Air's own "New Session" action, then wait for its prompt to appear.
         val newSession = ActionManager.getInstance().getAction(NEW_SESSION_ACTION_ID)
@@ -160,7 +170,7 @@ class SendToAirAction : AnAction() {
             // Regular code editors (real files) are not sessions; Air session tabs are virtual files.
             if (fileEditor is TextEditor && fileEditor.file?.isInLocalFileSystem != false) continue
             val send = findSender(fileEditor.component, fileEditor.preferredFocusedComponent) ?: continue
-            focusEditor(fileEditorManager, fileEditor)
+            focusEditor(project, fileEditor)
             send(refs)
             return true
         }
@@ -180,6 +190,21 @@ class SendToAirAction : AnAction() {
         return false
     }
 
+    /** Opens the most recently used Air session tab, if any is open. Returns false when there is none. */
+    private fun revealRecentSession(project: Project): Boolean {
+        val fileEditorManager = FileEditorManager.getInstance(project)
+        val sessions = fileEditorManager.openFiles.filter(::isAirSessionFile)
+        if (sessions.isEmpty()) return false
+        // History lists files oldest first.
+        val recent = EditorHistoryManager.getInstance(project).fileList.asReversed().firstOrNull { it in sessions }
+        openAndFocus(project, recent ?: sessions.last())
+        return true
+    }
+
+    // Air session tabs (both chat and terminal-based) live in Air's own virtual file system.
+    private fun isAirSessionFile(file: VirtualFile): Boolean =
+        file.fileSystem.javaClass.name.startsWith(AIR_PACKAGE_PREFIX)
+
     private fun findSender(root: JComponent, preferredFocused: JComponent?): ((List<Reference>) -> Unit)? {
         findPromptField(root)?.let { field ->
             return { refs -> insert(field, formatForAirPrompt(refs)) }
@@ -188,9 +213,15 @@ class SendToAirAction : AnAction() {
         return { refs -> terminal(formatForClaudeCode(refs)) }
     }
 
-    private fun focusEditor(fileEditorManager: FileEditorManager, fileEditor: FileEditor) {
+    private fun focusEditor(project: Project, fileEditor: FileEditor) {
         val file = fileEditor.file ?: return
-        fileEditorManager.openFile(file, true)
+        openAndFocus(project, file)
+    }
+
+    // FileEditorManager.openFile(file, focus) is deprecated in 2026.3, and its replacement (requestOpenFile)
+    // is experimental and missing in 2026.2; navigating to the file opens and focuses its tab on both.
+    private fun openAndFocus(project: Project, file: VirtualFile) {
+        OpenFileDescriptor(project, file).navigate(true)
     }
 
     private fun findPromptField(root: JComponent): EditorTextField? =
@@ -217,7 +248,9 @@ class SendToAirAction : AnAction() {
         const val NEW_SESSION_ACTION_ID = "AgentThreads.MainToolbar.NewThread"
         const val NOTIFICATION_GROUP_ID = "Send to Air"
         const val CHAT_TOOL_WINDOW_ID = "air.chat"
+        const val AIR_PACKAGE_PREFIX = "com.intellij.air."
         const val RETRY_DELAY_MS = 100
-        const val MAX_RETRIES = 30
+        // A terminal-based session may need to relaunch its agent after its tab is shown, so allow ~10 s.
+        const val MAX_RETRIES = 100
     }
 }
