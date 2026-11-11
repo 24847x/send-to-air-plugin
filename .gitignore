@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+.gradle-home/
+.intellijPlatform/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / sensitive
+local.properties
+*.env
+*.key
+*.pem
+secrets/
+
+# Kotlin
+.kotlin/

@@ -1,0 +1,61 @@
+<idea-plugin>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.air</depends>
+    <depends optional="true" config-file="sendtoair-terminal.xml">org.jetbrains.plugins.terminal</depends>
+
+    <description><![CDATA[
+        <p>Send selected code to JetBrains Air — with the file name and line numbers already attached.</p>
+
+        <p>No more switching windows, copying code, and typing "this is from file X line Y". Select the code, press the shortcut, and start asking your question.</p>
+
+        <h2>How to use</h2>
+        <ol>
+            <li>Select any code in the editor.</li>
+            <li>Press <b>Alt+Shift+A</b> (macOS: <b>⌥⇧A</b>), or right-click → <b>Send to Air</b>.</li>
+            <li>The open Air session (or a new one, if none is open) gets the chat input pre-filled:<br/>
+                <code>@file:UserService.kt [lines from 42 to 58]</code>
+            </li>
+            <li>Type your question and press Enter.</li>
+        </ol>
+        <p>You can also send files and folders: select them in the <b>Project</b> view (<b>⌘1</b> / <b>Alt+1</b>), then press the same shortcut or right-click → <b>Send to Air</b>. Each one is inserted as <code>@file:src/Main.kt</code> or <code>@folder:src/checkout/</code>.</p>
+        <p>Terminal-based sessions such as Claude Code are supported too: the reference is pasted into the agent's terminal in its own format, e.g. <code>@src/UserService.kt#L42-58</code>.</p>
+        <p>The message is inserted but <b>not sent automatically</b> — you can review and add context before submitting.</p>
+
+        <h2>How to change the shortcut</h2>
+        <ol>
+            <li>Open <b>Settings</b> → <b>Keymap</b>.</li>
+            <li>Search for <b>Send to Air</b>.</li>
+            <li>Double-click → <b>Add Keyboard Shortcut</b> → press your keys → OK.</li>
+        </ol>
+
+        <h2>Requirements</h2>
+        <ul>
+            <li>The <a href="https://plugins.jetbrains.com/plugin/33314-air">JetBrains Air</a> plugin must be installed and enabled.</li>
+            <li>Works in JetBrains IDEs version 2026.2 or newer (the versions Air supports): IntelliJ IDEA, PyCharm, WebStorm, PhpStorm, GoLand, CLion, Rider, RubyMine, RustRover, DataGrip, Android Studio.</li>
+        </ul>
+    ]]></description>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="Send to Air" displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <action
+            id="SendToAir"
+            class="com.loudyo.sendtoair.SendToAirAction"
+            text="Send to Air"
+            description="Insert a reference to the selected code, files or folders into the Air chat">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+            <keyboard-shortcut
+                keymap="$default"
+                first-keystroke="alt shift A"/>
+            <keyboard-shortcut
+                keymap="Mac OS X"
+                first-keystroke="alt shift A"/>
+            <keyboard-shortcut
+                keymap="Mac OS X 10.5+"
+                first-keystroke="alt shift A"/>
+        </action>
+    </actions>
+</idea-plugin>
